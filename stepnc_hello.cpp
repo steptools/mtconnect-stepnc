@@ -189,6 +189,50 @@ void appendToFile(String^ file_name,String^ new_file_name,bool convert_to_inches
 	
    
 }
+ 
+
+long long GetWorkplan(String^name,STEPNCLib::AptStepMaker ^ apt, STEPNCLib::Finder ^find){
+
+
+long long wp_id = find->GetMainWorkplan();
+String^ str=nullptr;
+	
+str=find->GetExecutableName (wp_id);
+	if(str!=nullptr){
+		Console::WriteLine("Workplan name: %s\n", str);
+		List<long long>^nestedPlans =find->GetWorkplanExecutableAll (wp_id);
+		for each (long long x in nestedPlans){
+		str=find->GetExecutableName (x);
+	if(str!=nullptr){
+		Console::WriteLine("Workplan name: %s\n", str);}
+		
+	if(str==name){
+		return x; 
+		}
+
+		}
+		
+	
+
+	
+	
+	
+	
+	}
+
+
+
+
+}
+
+List<array<double>^> ^ GetRapidToolPaths()
+{
+
+
+
+}
+
+*/
 int main(int argc, char * argv[])
 {
 	
@@ -201,6 +245,7 @@ int main(int argc, char * argv[])
 	//mt->getRequest("http://okuma-matata:5000/sample?count=1000&interval=10&path=//Path/DataItems/DataItem[@id=\"Mp1LPathPos\"]");
 	//PullFromServer(mt);
     appendToFile("moldy_data_iteration_2.xml","moldy.stpnc",true);
+
 	String ^readIn =Console::ReadLine();
 	return 0;
 }
