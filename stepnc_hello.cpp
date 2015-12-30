@@ -375,7 +375,46 @@ return Lst;
 }
 
 
+//return list of array of all rapid tool paths
+//each array repesents a consecutive rpaid movement
+List<List<long long>^> ^ getAllRapidPaths(long long workplan, STEPNCLib::Finder ^find){
+	List<long long> ^wsList=gcnew List<long long>();
+	List<long long>^pathList=gcnew List<long long>();
+	List<long long>^tempPathList=nullptr;
+	List<List<long long>^> ^ rapidToolPaths=gcnew List<List<long long>^>();
+	//get all enabled working steps form a specified work plan
+	getAllWorksteps(workplan,find,wsList);
+	Console::WriteLine("workplan {0}",workplan);
+	//for each ws append all of the tool paths within that
+	//ws to pathList
+	for each(long long x in wsList ){
+		Console::WriteLine("ws : {0}",find->GetWorkingstepName2(x));
+		pathList->AddRange(find->GetWorkingstepPathAll(x));
+		
+	}
+	bool prevPathIsRapid=false;
+	bool currentPathIsRapid=false;
+	
+	//current path is index i-1
+	for( int i=0;i<pathList->Count;i++){
+		currentPathIsRapid=find->GetPathRapid(pathList[i]);
 
+		if(currentPathIsRapid &&tempPathList==nullptr){
+			tempPathList=gcnew List<long long>();
+			tempPathList->Add(pathList[i]);
+		}else if(currentPathIsRapid &&tempPathList!=nullptr){
+			tempPathList->Add(pathList[i]);
+		}else if(!currentPathIsRapid &&tempPathList!=nullptr){
+			rapidToolPaths->Add(tempPathList);
+			tempPathList=nullptr;
+		}
+
+
+		
+	
+	}
+	return rapidToolPaths;
+}
 //return list of transitions Feed->rapid,rapid to feed
 //each array has two curve ids of (F,R)or (R,F) 
 //third element of array indicates type of transition 0 F->R 1 R->F
@@ -383,7 +422,7 @@ List<array<long long>^> ^ GetRapidToolPaths(long long workplan, STEPNCLib::Finde
 {
 	List<long long> ^wsList=gcnew List<long long>();
 	List<long long>^pathList=gcnew List<long long>();
-	List<long long>^tempPathList=nullptr;
+	//List<long long>^tempPathList=nullptr;
 	List<array<long long>^> ^ rapidToolPaths=gcnew List<array<long long>^>();
 	//get all enabled working steps form a specified work plan
 	getAllWorksteps(workplan,find,wsList);
@@ -442,7 +481,7 @@ void feedToRapid(long long path1,long long path2,STEPNCLib::AptStepMaker ^ apt, 
 	long long rapidCurve=find->GetPathCurveNext(path2,0,isarc);
 	find->GetPathCurveStartPoint(rapidCurve,x,y,z);
 	
-	apt->GoToXYZ("extending the feed to known rapid position",x,y,z);
+	apt->GoToXYZ("extending the feed to known rapid position",x,y,z); 
 	apt->Workingstep(String::Format("Feed to Rapid at {0},{1},{2}",x,y,z));
 	apt->Rapid();
 
@@ -489,7 +528,33 @@ void rapidToFeed(long long path1,long long path2,STEPNCLib::AptStepMaker ^ apt, 
 	
 	
 }
+List<double> ^getAllPoints(List<long long>^ paths,STEPNCLib::Finder ^find){
+	List<long long >^ curves=nullptr;
+	List<double> ^pts=gcnew List<double>();
+	for each (long long path in paths){
+		curves=find->GetPathCurveAll(path);
+		for each (long long curve in curves){
+			pts->AddRange(find->GetPathPolylinePointAll(curve));
+		
+		
+		}
+	
+	}
+return pts;
+}
+void patchRapid(List<long long>^ pathList,STEPNCLib::AptStepMaker ^ apt, STEPNCLib::Finder ^find,double max_feed){
+	apt->Rapid();
+	apt->Workingstep("starting Rapid");
+		List<double>^ pts=getAllPoints(pathList,find);
+		int totalPts=pts->Count/3;
+		for (int i=0;i<totalPts;i++){
+			apt->GoToXYZ("rapid",pts[i*3],pts[i*3+1],pts[i*3+2]);
+		
+		}
 
+	apt->Feedrate(max_feed);
+	apt->Workingstep("starting Feed");
+}
 void patch(List<array<long long>^> ^transitions,int currentTransition,bool prevIsRapid,bool currentIsRapid,List<array<double>^> ^coorList,int coorIndex,STEPNCLib::AptStepMaker ^ apt, STEPNCLib::Finder ^find,double max_feed){
 	
 	array<long long>^ transition=transitions[currentTransition];
@@ -523,10 +588,10 @@ void patch(List<array<long long>^> ^transitions,int currentTransition,bool prevI
 //that contains tool position
 //the tool paths represented in the xml file should be identical to the
 //toolpaths of the ws in the identified workplan
-void appendPatchWorkPlan(String^partFile,String^coorFile,String^ path,bool toInches ){
+void appendPatchWorkPlan(String^partFile,String^coorFile,String^outName,String^ path,bool toInches ){
 	Console::WriteLine("input \n part {0}\n xml file{1} \n path to desired workplan {2}",partFile,coorFile,path);
 	//assume all units are inches or inches per sec
-	double max_feed=12.3/60;//inches per sec
+	double max_feed=14.0/60;//inches per sec
 	//get path position coordinates from the xml file with delta t
 	List<array<double>^> ^coorList=	coordinatesWithTime(coorFile,toInches);
 	Console::WriteLine("Got coordinates list");
@@ -545,7 +610,7 @@ void appendPatchWorkPlan(String^partFile,String^coorFile,String^ path,bool toInc
 	long long id= getWorkPlanByPath(nameList,find);
 	//get all tool paths within a work plan that has a transition from feed to rapid or
 	//rapid to feed
-	List<array<long long>^> ^transitionPaths= GetRapidToolPaths(id, find);
+	List<List<long long>^> ^transitionPaths= getAllRapidPaths(id, find);
 
 	//begin the extended version of the stpnc file
 
@@ -570,56 +635,70 @@ void appendPatchWorkPlan(String^partFile,String^coorFile,String^ path,bool toInc
 	array<double>^ coor1;
 	array<double>^coor2;
 
-	bool prevCoorisRapid=false;
+	bool startRapid=false;
 	bool currentCoorisRapid=true;
 	int currentTransition=0;
 	Console::WriteLine("number of path coordinates {0}",coorList->Count);
 	Console::WriteLine("number of transitions {0}",transitionPaths->Count);
+	//determine if starting position is in rapid mode or feed
+	if(coorList->Count>1){
+		coor1=coorList[0];
+		coor2=coorList[1];
+	
+		if (actualFeedRate(coor1,coor2)>max_feed){
+			currentCoorisRapid=true;
+			
+
+		}else{
+
+			currentCoorisRapid=false;
+		}
+			
+		if(currentCoorisRapid){
+				apt->Rapid();
+			}else{
+				apt->Feedrate(max_feed);
+			}
+		}
+	
+	double actualFeed=0;
 	//iterate over all pair of consecutive points
 	for (int i=1;i<coorList->Count;i++){
 		coor1=coorList[i-1];
 		coor2=coorList[i];
 
 		str=String::Format("point {0} ",i+1);
-
-		if (actualFeedRate(coor1,coor2)>max_feed){
+		actualFeed=actualFeedRate(coor1,coor2);
+		if (actualFeed>max_feed){
 			currentCoorisRapid=true;
-
+			//Console::WriteLine("actualFeed {0}",actualFeed);
 		}else{
 
 			currentCoorisRapid=false;
 		}
-		if(i==1){
-			prevCoorisRapid=currentCoorisRapid;
-			if(prevCoorisRapid){
-				apt->Rapid();
-			}else{
-				apt->Feedrate(max_feed);
-			}
-		}
-
-
-		if (prevCoorisRapid!=currentCoorisRapid){
-			if (currentTransition<transitionPaths->Count){
-				Console::WriteLine("previous coordinates are rapid {0} current coordinates are rapid {1}",prevCoorisRapid,currentCoorisRapid);
-				Console::WriteLine("transition between coor ({0},{1},{2}) and ({3}{4}{5})",coor1[0],coor1[1],coor1[2],coor2[0],coor2[1],coor2[2]);
-				patch(transitionPaths,currentTransition, prevCoorisRapid, currentCoorisRapid,coorList,i, apt, find, max_feed);
-				apt->GoToXYZ(str, coor2[0], coor2[1], coor2[2]);
-				currentTransition+=1;
-				Console::WriteLine("transition {0}",currentTransition);
-			}
-		}
-		else{
+		
+		if (!startRapid&&currentCoorisRapid){
 			
-			if (currentTransition<transitionPaths->Count){
-			apt->GoToXYZ(str, coor2[0], coor2[1], coor2[2]);
-			}
-		}
-		prevCoorisRapid=currentCoorisRapid;
+			if(currentTransition<transitionPaths->Count){
 
+				//Console::WriteLine("rapid at coor ({0}{1}{2})",coor1[0],coor1[1],coor1[2]);
+				startRapid=true;
+				patchRapid(transitionPaths[currentTransition],apt,find,max_feed);
+				currentTransition+=1;
+			}
+		
+		}else if(currentCoorisRapid==false){
+		
+			startRapid=false;
+			apt->GoToXYZ("feed",coor2[0],coor2[1],coor2[2]);
+		}
+		/*if(currentTransition<transitionPaths->Count){
+			Console::WriteLine(" coor ({0}{1}{2}) actual {3} max {4}",coor2[0],coor2[1],coor2[2],actualFeed,max_feed);
+			}*/
+		
 
 	}
-	apt->SaveAsModules("patched.stpnc");
+	apt->SaveAsModules(outName);
 	Console::WriteLine("done");
 
 
@@ -637,8 +716,8 @@ int main(int argc, char * argv[])
 	
 	//mt->getRequest("http://okuma-matata:5000/sample?count=1000&interval=10&path=//Path/DataItems/DataItem[@id=\"Mp1LPathPos\"]");
 	//PullFromServer(mt);
- // appendToFile("hardMoldy_50ms.xml","hardmoldy_ext.stpnc","moldy.stpnc",true);
-	appendPatchWorkPlan("hardmoldy_ext.stpnc","moldy_100ms.xml","HARDMOLDY/Profiling/Boeing",true);
+ //appendToFile("sample_200ms.xml","hardmoldy_ext.stpnc","moldy_200.stpnc",true);
+	appendPatchWorkPlan("hardmoldy_ext.stpnc","sample_200ms.xml","patched_200.stpnc","HARDMOLDY/Profiling/Boeing",true);
 	String ^readIn =Console::ReadLine();
 	return 0;
 }
