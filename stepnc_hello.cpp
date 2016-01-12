@@ -925,7 +925,7 @@ Console::WriteLine("input \n part {0}\n xml file{1} \n path to desired workplan 
 		if(index==1){preCoorIsRapid=coorIsRapid;}
 		if(!coorIsRapid){
 			
-			recordMatchingFeedPath(allPaths, wsIndex, pathIndex,coor2,find, apt)
+			recordMatchingFeedPath(allPaths, wsIndex, pathIndex,coor2,find, apt);
 		
 		}else if(preCoorIsRapid!=coorIsRapid){
 		
