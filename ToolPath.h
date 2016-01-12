@@ -31,7 +31,7 @@ public:
 	__int64 getWSId();
 	__int64 getWPId();
 	WS^ getWS(){return parent;};
-	WP^getWP(){return parent->getWP();}
+	WP^getWP(){return parent->getParent();}
 	__int64 getId(){return id;}
 	__int64 getIndex(){return index;}
 	//get pointer to next path regardless if it is a new WS or WP

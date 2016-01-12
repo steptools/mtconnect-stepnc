@@ -32,6 +32,7 @@ public:
 	void addPath(ToolPath^t){pathList->Add(t);};
 	
 	ToolPath^ getPath(__int64 i){if(i<pathList->Count){return pathList[i];}else {return nullptr;}}
+	__int64 getPathCount(){return pathList->Count;}
 	WS(String^ n,__int64 ID,__int64 in,WP^p,__int64 toolID):Exec( n,ID,in,p)
 	{
 	pathList=gcnew List<ToolPath^>;

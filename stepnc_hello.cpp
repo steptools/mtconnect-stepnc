@@ -11,12 +11,13 @@
 //	http://www.steptools.com/support/stepnc_docs/
 //
 #include "MtConnector.h"
+#include "WP.h"
 using namespace System;
 
 using namespace System::Xml;
 using namespace System::Collections::Generic;
 
-//array<int>^ CurrentPos(String ^xml)
+//generates position information from the xml file
 List<array<double>^> ^  coordinates(String ^fileName,bool convert_to_inches){
 //create instance of the xml reader
 	
@@ -64,7 +65,7 @@ List<array<double>^> ^  coordinates(String ^fileName,bool convert_to_inches){
 		}
 return Lst;
 }
-
+//request a sampel of position information form server
 void PullFromServer(MtConnector ^ mt){
 
 
@@ -133,7 +134,7 @@ STEPNCLib::AptStepMaker ^ apt = gcnew STEPNCLib::AptStepMaker();
  
 
 }
-
+//creates raw tool paths with no patching
 void appendToFile(String^ file_name,String^ original,String^ new_file_name,bool convert_to_inches){
 	List<array<double>^> ^coor_List= coordinates(file_name,convert_to_inches);
     // Create a trivial STEP-NC file
@@ -189,6 +190,7 @@ void appendToFile(String^ file_name,String^ original,String^ new_file_name,bool 
 	
    
 }
+//use a path of wP1/wp2/wp3 to get id of wp3 
 long long getWorkPlanByPath(array<String^>^ nameList,STEPNCLib::Finder ^find){
 	long long root=find->GetMainWorkplan();
 	bool found=false;
@@ -217,72 +219,6 @@ long long getWorkPlanByPath(array<String^>^ nameList,STEPNCLib::Finder ^find){
 	
 	Console::WriteLine("Found WorkPlan{0}",find->GetExecutableName(root));
 	return root;
-}
-
-
-long long getWorkPlanByName(String^ name,STEPNCLib::Finder ^find,long long root){
-	
-	if (find->IsProgramStructure(root)){
-		List<long long>^nestedPlans =find->GetNestedExecutableAll (root);
-		for each (long long x in nestedPlans){
-			
-				if(find->IsProgramStructure(x)){
-					Console::WriteLine(find->GetExecutableName(x));
-					if(name==find->GetExecutableName(x)){
-						return x;
-					}else{
-						getWorkPlanByName(name,find,x);
-					
-					}
-				
-				}
-		
-		
-		}
-	
-	}
-
-
-
-}
-
-long long GetWorkplan(String^name,STEPNCLib::AptStepMaker ^ apt, STEPNCLib::Finder ^find){
-
-
-long long wp_id = find->GetMainWorkplan();
-Console::WriteLine("main workplan id is {0}",wp_id);
-String^ str=nullptr;
-	
-str=find->GetExecutableName(wp_id);
-long long temp_id=wp_id;
-
-	if(str!=nullptr){
-		Console::WriteLine("Workplan name: {0}\n", str);
-		List<long long>^nestedPlans =find->GetNestedExecutableAll (wp_id);
-		for each (long long x in nestedPlans){
-			str=find->GetExecutableName(x);
-			if(str!=nullptr){
-		Console::WriteLine("Workplan name: {0}\n", str);}
-		
-			List<long long>^nestedExecutables=find->GetNestedExecutableAll (x);
-		for each (long long y in nestedExecutables){
-			str=find->GetExecutableName(y);
-			
-		
-	if(str!=nullptr){
-		Console::WriteLine("Executable name: {0}\n", str);
-	if(str==name){
-		return y; 
-		}
-	}
-		
-	
-		}
-		}
-		
-	
-	}
-
 }
 //recursively get all enabled worksteps
 void getAllWorksteps(long long root,STEPNCLib::Finder ^find,List<long long>^ wsList){
@@ -462,53 +398,6 @@ List<List<long long>^> ^ getAllRapidPaths(long long workplan, STEPNCLib::Finder 
 		
 	
 	}
-	return rapidToolPaths;
-}
-//return list of transitions Feed->rapid,rapid to feed
-//each array has two curve ids of (F,R)or (R,F) 
-//third element of array indicates type of transition 0 F->R 1 R->F
-List<array<long long>^> ^ GetRapidToolPaths(long long workplan, STEPNCLib::Finder ^find)
-{
-	List<long long> ^wsList=gcnew List<long long>();
-	List<long long>^pathList=gcnew List<long long>();
-	//List<long long>^tempPathList=nullptr;
-	List<array<long long>^> ^ rapidToolPaths=gcnew List<array<long long>^>();
-	//get all enabled working steps form a specified work plan
-	getAllWorksteps(workplan,find,wsList);
-	Console::WriteLine("workplan {0}",workplan);
-	//for each ws append all of the tool paths within that
-	//ws to pathList
-	for each(long long x in wsList ){
-		Console::WriteLine("ws : {0}",find->GetWorkingstepName2(x));
-		pathList->AddRange(find->GetWorkingstepPathAll(x));
-		
-	}
-	bool currentPathIsRapid=false;
-	array<long long>^ tempTrans;
-	//for each consecutive pair of paths in path list, determine if there is a 
-	//transition from feed->rapid or rapid->feed
-	//if there is a transition record the pair of paths in rapidtoolpaths
-	if(pathList->Count>0){currentPathIsRapid=find->GetPathRapid(pathList[0]);}
-	//current path is index i-1
-	for( int i=1;i<pathList->Count;i++){
-		if(find->GetPathRapid(pathList[i])!=currentPathIsRapid){
-			tempTrans=gcnew array<long long>(3);
-				tempTrans[0]=pathList[i-1];
-			tempTrans[1]=pathList[i];
-			if(currentPathIsRapid){
-			tempTrans[2]=1;
-			}else
-			{tempTrans[2]=0;}
-			rapidToolPaths->Add(tempTrans);
-		
-		}
-		currentPathIsRapid=find->GetPathRapid(pathList[i]);
-	
-	
-	}
-
-	//GetPathPolylinePointAll/Count/Next()
-
 	return rapidToolPaths;
 }
 
@@ -1063,7 +952,39 @@ void appendPatchWorkPlan(String^partFile,String^coorFile,String^outName,String^ 
 
 
 }
-
+//recursively get all enabled worksteps and generate WP WS and TP objects
+WP^ getAllExec(__int64 root,STEPNCLib::Finder ^find,WP^plan,__int64 index){
+	WP^ mainWP =nullptr;
+	String^ name;
+	WS^ mainWS=nullptr;
+	__int64 toolID;
+	if (find->IsProgramStructure(root)){
+		name=find->GetExecutableName(root);
+		
+		mainWP=gcnew WP(name,root,index,nullptr);
+		plan->addExecutable(mainWP);
+		List<long long>^nestedPlans =find->GetNestedExecutableAllEnabled (root);
+		for (int i=0;i<nestedPlans->Count;i++){
+			
+				if(find->IsProgramStructure(nestedPlans[i]))
+					{
+						getAllExec(nestedPlans[i],find,mainWP,i);
+					
+					}
+				else if (find->IsWorkingstep(nestedPlans[i])&&find->IsEnabled(nestedPlans[i])){
+					name=find->GetExecutableName(nestedPlans[i]);
+					toolID=find->GetWorkingstepTool(nestedPlans[i]);	
+					mainWS=gcnew WS(name,nestedPlans[i],i,mainWP,toolID);
+					mainWP->addExecutable(mainWS);
+					//need to all toolpaths
+				}
+				
+				}
+		
+		
+		}
+	
+	}
 int main(int argc, char * argv[])
 {
 	
