@@ -11,7 +11,8 @@ ref class ToolPath
 {
 private:
 	bool isRapid;
-	double speed;
+	double spindleSpeed;
+	double feedrate;
 	__int64 index;
 	__int64 id;
 	WS^ parent;
@@ -20,10 +21,11 @@ private:
 
 
 public:
-	ToolPath(WS^ p,bool rapid,double s,__int64 in, __int64 ID){
+	ToolPath(WS^ p,bool rapid,double f,double s,__int64 in, __int64 ID){
 	parent=p;
 	isRapid=rapid;
-	speed=s;
+	feedrate=f;
+	spindleSpeed=s;
 	index=in;
 	id=ID;
 	

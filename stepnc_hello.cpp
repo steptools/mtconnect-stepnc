@@ -957,12 +957,17 @@ WP^ getAllExec(__int64 root,STEPNCLib::Finder ^find,WP^plan,__int64 index){
 	WP^ mainWP =nullptr;
 	String^ name;
 	WS^ mainWS=nullptr;
+	ToolPath^mainTP=nullptr;
 	__int64 toolID;
+	double feed,spindle;
+	bool rapid,coolant;
 	if (find->IsProgramStructure(root)){
 		name=find->GetExecutableName(root);
 		
-		mainWP=gcnew WP(name,root,index,nullptr);
+		mainWP=gcnew WP(name,root,index,plan);
+		if(plan!=nullptr){
 		plan->addExecutable(mainWP);
+		}
 		List<long long>^nestedPlans =find->GetNestedExecutableAllEnabled (root);
 		for (int i=0;i<nestedPlans->Count;i++){
 			
@@ -976,14 +981,20 @@ WP^ getAllExec(__int64 root,STEPNCLib::Finder ^find,WP^plan,__int64 index){
 					toolID=find->GetWorkingstepTool(nestedPlans[i]);	
 					mainWS=gcnew WS(name,nestedPlans[i],i,mainWP,toolID);
 					mainWP->addExecutable(mainWS);
-					//need to all toolpaths
+					//need to add all toolpaths
+					List<__int64>^ pathID=find->GetWorkingstepPathAll(nestedPlans[i]);
+					for (int j=0;j<pathID->Count;j++){
+						find->GetPathProcess(pathID[j],feed,spindle,rapid,coolant);
+						mainTP=gcnew ToolPath(mainWS,rapid,feed,spindle,j,pathID[j]);
+					
+					}
 				}
 				
 				}
 		
 		
 		}
-	
+	return mainWP;
 	}
 int main(int argc, char * argv[])
 {
