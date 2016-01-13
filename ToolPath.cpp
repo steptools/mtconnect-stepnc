@@ -59,25 +59,31 @@ ToolPath^ recurseToNextToolPath(WP^ current , __int64 startIndexAfter){
 
 	
 }
-void recurseToolPath(Exec^ current,ToolPath^% result){
-	WS^ tempWS=dynamic_cast<WS^>(current);
-	WP^ tempWP=dynamic_cast<WP^>(current);
-
+ToolPath^ recurseToolPath(Exec^ current){
+	WS^ tempWS=nullptr;
+	WP^ tempWP=nullptr;
+	WP^ tempWP2;
+	if (current->isWP()){
+		tempWP=dynamic_cast<WP^>(current);
+	}
+	else{
+	tempWS=dynamic_cast<WS^>(current);
+	}
 	if(tempWS!=nullptr){
 		if(tempWS->getPathCount()>0){
-			 result=tempWS->getPath(0);
-			 return;
+			 return tempWS->getPath(0);
+			 
 		}
 	}
 	if(tempWP!=nullptr){
 		for (int i=0;i<tempWP->getExecutableCount();i++){
-			recurseToolPath(current,result);
-			if (result!=nullptr){
-			return;
-			}
+			
+			return recurseToolPath(tempWP->getExecutable(i));
+			
 		
 		}
 	
 	
 	}
+	return nullptr;
 }
