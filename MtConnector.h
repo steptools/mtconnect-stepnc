@@ -17,13 +17,13 @@ private:
 	WebClient ^wc;
 	int getMessageSize(String^bound,StreamReader^ reader);
 	array<wchar_t>^ getMessage(int size,StreamReader ^ reader);
-	void printXMLData(array<wchar_t>^ buff);
+	void printXMLData(array<wchar_t>^ buff,DateTime ^%,bool firstTime,StreamWriter^ writer);
 public:
 	MtConnector();
 	array<double>^ getPos();
 	void printData();
 	Boolean startPush(String ^ str);
-	void getRequest(String^ str);
+	void getRequest(String^ str,String^ dataLocation);
 
 	
 	void EventHandler(Object^ sender, OpenReadCompletedEventArgs^ e);

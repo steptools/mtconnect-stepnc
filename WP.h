@@ -7,8 +7,9 @@ using namespace System::Text;
 
 #ifndef __WP__
 #define __WP__
-#include "Exec.h";
-#include "WS.h";
+#include "Exec.h"
+#include "WS.h"
+#include "ToolPath.h"
  ref class WP:Exec
 {
 private:
@@ -16,13 +17,13 @@ private:
 	
 	List<Exec^>^ execList;
 public:
-	void addExecutable(Exec^);
+	void addExecutable(Exec^ e){execList->Add(e);};
 	WP(String^ n,__int64 ID,__int64 in,WP^p):Exec(n,ID,in,p,true){
-		execList=gcnew List<Exec^>;
-	}
+		execList=gcnew List<Exec^>();
+	};
 	
-	ToolPath^  WP::firstPath(WP^ root){
-		if (root=nullptr){
+	ToolPath ^  WP::firstPath(WP^ root){
+		if (root==nullptr){
 			root=this;
 		}
 		Exec^tempExec;
@@ -30,7 +31,7 @@ public:
 		WS^ tempWS;
 		for(int i=0;i<root->getExecutableCount();i++){
 			tempExec=root->getExecutable(i);
-			if (tempExec->isWP){
+			if (tempExec->isWP()){
 				tempWP=dynamic_cast<WP^>(tempExec);
 				return firstPath(tempWP);
 			}else{
@@ -43,10 +44,10 @@ public:
 		}
 		return nullptr;
 			
-	}
+	};
 	Exec^ getExecutable(__int64 i){if(i<getExecutableCount()){return execList[i];}};
 	
-	__int64 getExecutableCount(){return execList->Count;}
+	__int64 getExecutableCount(){return execList->Count;};
 
 };
 #endif

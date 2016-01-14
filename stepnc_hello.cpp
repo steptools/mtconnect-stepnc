@@ -17,6 +17,14 @@ using namespace System;
 using namespace System::Xml;
 using namespace System::Collections::Generic;
 
+array<double>^ vectorDivide(array<double>^ vec,double scalar){
+	array<double>^ result=gcnew array<double>(vec->Length);
+	for (int i=0;i< result->Length;i++){
+		result[i]=vec[i]/scalar;
+	
+	}
+	return result;
+}
 
 array<double>^ vectorAdd(array<double>^vec1,array<double>^vec2){
 	array<double>^ result=gcnew array<double>(vec1->Length);
@@ -38,11 +46,6 @@ for (int i=0;i<vec1->Length;i++){
 return sum;
 
 }
-array<double>^vectorNorm(array<double>^vec){
-	return vectorDivide(vec,vectorMag(vec));
-
-
-}
 double vectorMag(array<double>^ vec){
 
 	double sum=0;
@@ -51,6 +54,12 @@ double vectorMag(array<double>^ vec){
 		sum+=Math::Pow(vec[i],2.0);
 	}
 	return Math::Sqrt(sum);
+}
+
+array<double>^vectorNorm(array<double>^vec){
+	return vectorDivide(vec,vectorMag(vec));
+
+
 }
 array<double>^ vectorSubtract(array<double>^pt1, array<double>^pt2){
 	if (pt1->Length!=pt2->Length){
@@ -70,21 +79,13 @@ array<double>^ vectorMult(array<double>^vec,double scalar){
 		
 	
 	}
-
+return result;
 }
 array<double>^ vector3dCrossProduct(array<double>^ vec1,array<double>^vec2){
 	array<double>^ result=gcnew array<double>(3);
 	result[0]=vec1[1]*vec2[2]-vec1[2]*vec2[1];
 	result[1]=-1.0*(vec1[0]*vec2[2]-vec1[2]*vec2[0]);
 	result[2]=vec1[0]*vec2[1]-vec1[1]*vec2[0];
-	return result;
-}
-array<double>^ vectorDivide(array<double>^ vec,double scalar){
-	array<double>^ result=gcnew array<double>(vec->Length);
-	for (int i=0;i< result->Length;i++){
-		result[i]=vec[i]/scalar;
-	
-	}
 	return result;
 }
 
@@ -273,6 +274,7 @@ double curveDist(long long pathIndex, long long curve,array<double>^coor, STEPNC
 
 //corner cases
 //	next path is a rapid->either the curve is the last curve of the consecutive feed paths or return false
+/*
 
 bool matchToCurrentPath(List<List<long long>^>^ allPaths,long long %wsIndex,long long% pathIndex,double threshold, STEPNCLib::Finder ^find,array<double>^coor){
 	
@@ -410,7 +412,7 @@ Console::WriteLine("input \n part {0}\n xml file{1} \n path to desired workplan 
 	
 
 }
-
+*/
 //recursively get all enabled worksteps and generate WP WS and TP objects
 
 int main(int argc, char * argv[])
@@ -418,11 +420,13 @@ int main(int argc, char * argv[])
 	
 	MtConnector ^ mt;
 	mt=gcnew MtConnector();
+	Console::WriteLine("created MTCOnnect");
 	//mt->startPush("http://okuma-matata:5000/sample?count=1000&interval=10&path=//Path/DataItems/DataItem[@type=\"Path_Position\"]");
 	//http://agent.mtconnect.org/VMC-3Axis/sample?count=1000&interval=10&path=//Path/DataItems/DataItem[@category=\"SAMPLE\"]"
 	//http://okuma-matata:5000/sample?count=1000&interval=10
 	//"http://okuma-matata:5000/sample?count=1000&interval=10&path=//Path/DataItems/DataItem[@id=\"Mp1LPathPos\"]");
-	mt->getRequest("http://okuma-matata:5000/sample?count=1000&interval=10&path=//Path/DataItems/DataItem[@type=\"Path_Position\"]");
+	mt->getRequest("http://okuma-matata:5000/sample?count=1000&interval=1000&path=//Path/DataItems/DataItem[@type=\"PATH_POSITION\"]","DATA.txt");
+	///DataItems/DataItem[@type=\"PathPosition\"]
 	//PullFromServer(mt);
  //appendToFile("sample_300ms.xml","hardmoldy_ext.stpnc","moldy_300.stpnc",true);
 	//appendPatchWorkPlan("hardmoldy_ext.stpnc","sample_300ms.xml","patched_300.stpnc","HARDMOLDY/Profiling/Boeing",true);

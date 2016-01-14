@@ -43,11 +43,17 @@ void MtConnector::EventHandler(Object^ sender, OpenReadCompletedEventArgs^ e){
 
 
 }
-void MtConnector::getRequest(String^ str){
+void MtConnector::getRequest(String^ requestStr,String^ dataLocation){
 	
-	UriBuilder^ build=gcnew UriBuilder(str);
+	UriBuilder^ build=gcnew UriBuilder(requestStr);
 	WebRequest^ request = WebRequest::Create(build->Uri);
-	WebResponse ^ response=request->GetResponse();
+	WebResponse ^ response;
+	try{
+	response=request->GetResponse();
+	}catch(Exception ^e){
+		Console::WriteLine(e);
+	}
+	Console::WriteLine("requested data");
 	//response->Headers->Add("Content-Type","multipart/x-mixed-replace;boundary=--");
 	//response->Headers->Add("Content-Type","text/xml");
 	//response->Headers->Add("Transfer-Encoding","chunked");
@@ -69,6 +75,15 @@ void MtConnector::getRequest(String^ str){
 	array<wchar_t>^ buff;
 	int size=0;
 	Console::WriteLine(bound);
+	//////////////////////////////////
+	
+	
+	//////////////////////////
+	bool firstTime=true;
+	DateTime ^ tempTime=gcnew DateTime();
+		
+	
+	StreamWriter ^write=gcnew StreamWriter(dataLocation);
 	while(!(reader->EndOfStream)){
 	
 	size=getMessageSize(bound,reader);
@@ -76,14 +91,64 @@ void MtConnector::getRequest(String^ str){
 	Console::WriteLine(size);
 	//Console::WriteLine(line);
     buff=getMessage(size,reader);    
-	printXMLData(buff);
-
+	printXMLData(buff,tempTime,firstTime,write);
+	write->Flush();
+	firstTime=false;
 	}
+	Console::WriteLine("end of stream");
 }
-void MtConnector::printXMLData(array<wchar_t>^ buff){
-	Console::WriteLine(buff);
+void MtConnector::printXMLData(array<wchar_t>^ buff,DateTime ^% time1,bool firstTime,StreamWriter ^ write){
+	String^ timeStr1,^timeStr2,^coor,^seq;
+	double diff=0;
+	DateTime^ time2=gcnew DateTime();
+	String ^ data=gcnew String(buff);
+	bool gotData=false;
+	//Console::WriteLine(data);
+	XmlReader^ reader = XmlReader::Create(gcnew StringReader(data));
+	try{
+		
+		while(reader->Read()){
+			//Console::WriteLine(reader->MoveToAttribute("timestamp"));
+			//Console::WriteLine(reader->ReadAttributeValue());
+			if(reader->Name=="PathPosition"){
+				
+			//Console::WriteLine(reader->GetAttribute("timestamp"));
+			//Console::WriteLine(reader->ReadInnerXml());
+				//DateTime^ time2=gcnew DateTime();
+				if (firstTime){
+					time1=time1->Parse(reader->GetAttribute("timestamp"));
+					seq=reader->GetAttribute("sequence");
+				coor=reader->ReadInnerXml();
+				coor=String::Format("{0} {1} {2}",coor,0,seq);
+				
+				firstTime=false;
+				
+				}
+				else{
+				time2=time2->Parse(reader->GetAttribute("timestamp"));
+				seq=reader->GetAttribute("sequence");
+				diff=(time2->Subtract(*time1).TotalSeconds);
+				coor=reader->ReadInnerXml();
+				coor=String::Format("{0} {1} {2}",coor,diff,seq);
+				//Console::WriteLine(time1);
+				//Console::WriteLine(time2);
+				
+				(*time1)=(*time2);
+				
+				}
+				write->WriteLine(coor);
+				Console::WriteLine(coor);
+			
+			}
+			
 
-
+			/*
+				if(reader->HasValue)
+			{Console::WriteLine(reader->Value);}
+			*/
+	}
+	}catch(Exception ^e){Console::WriteLine(e);}
+	
 }
 int MtConnector::getMessageSize(String^bound,StreamReader^ reader){
 int size=0;

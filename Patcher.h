@@ -34,7 +34,7 @@ private:
 
 	void OpenFile(String^file,String^ desiredWorkPlanPath,String^newWorkPlanName,STEPNCLib::Finder ^%find,STEPNCLib::AptStepMaker^%apt, __int64% wpID);
 	//Delete all workplans and executables in the same root as wpid and before wpid
-	void DeleteBefore(__int64 wpid);
+	//void DeleteBefore(__int64 wpid);
 
 	//returns coordinates in inches
 	List<array<double>^> ^  coordinates(String ^fileName,bool convert_to_inches);
@@ -48,7 +48,7 @@ private:
 	List<double> ^getAllPoints(List<long long>^ paths,STEPNCLib::Finder ^find);
 	void patchRapid(List<long long>^ pathList,STEPNCLib::AptStepMaker ^ apt, STEPNCLib::Finder ^find,double max_feed);
 	void appendPatchWorkPlan(String^partFile,String^coorFile,String^outName,String^ path,bool toInches );
-	void createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String coor,bool toInches);
-	ToolPath^ firstPath(__int64 root);
+	void createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor,bool toInches);
+	//ToolPath^ firstPath(__int64 root);
 };
 #endif

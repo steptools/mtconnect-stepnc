@@ -619,7 +619,7 @@ void DeleteBefore(__int64 wpid,STEPNCLib::Finder ^find,STEPNCLib::AptStepMaker^a
 
 }
 
-void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String coor,bool toInches){
+void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor,bool toInches){
 	STEPNCLib::AptStepMaker^ apt;
 	STEPNCLib::Finder^find;
 	__int64 oldWPID;
@@ -636,3 +636,88 @@ void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileNa
 
 
 }
+
+
+
+/*
+ToolPath^ nextPath(bool % newWP, bool% newWS){
+	ToolPath^temp=nextPath();
+	Exec^ tempExec;
+	if (temp!=nullptr){
+		newWP=false;
+		newWS=false;
+	return temp;
+	}
+	else{
+		WS^ tempWS=dynamic_cast<WS^>(parent);
+		ToolPath^ nextToolPath=nullptr;
+		List<WP^>^path=pathtoRoot(tempWS);
+		for (int i=0;i<path->Count;i++){
+			nextToolPath=recurseToNextToolPath(path[i],tempWS->getIndex());
+		
+		
+		}
+	}
+}
+List<WP^>^pathtoRoot(WS^temp){
+	List<WP^> ^path=gcnew List<WP^>();
+	WP^ temp1=dynamic_cast<WP^>(temp->getParent());
+
+	if(temp!=nullptr){
+		while (temp1!=nullptr){
+		path->Add(temp1);
+		temp1=dynamic_cast<WP^>(temp1->getParent());
+		
+		
+		}
+	
+	}
+
+	return path;
+
+}
+ToolPath^ recurseToNextToolPath(WP^ current , __int64 startIndexAfter){
+	ToolPath^ result=nullptr;
+	for(int i=startIndexAfter+1;i<current->getExecutableCount();i++){
+		result =recurseToolPath(current->getExecutable(i));
+		if(result!=nullptr){
+			return result;
+		}
+	}
+
+	
+}
+ToolPath^ recurseToolPath(Exec^ current){
+	WS^ tempWS=nullptr;
+	WP^ tempWP=nullptr;
+	WP^ tempWP2;
+	if (current->isWP()){
+		tempWP=dynamic_cast<WP^>(current);
+	}
+	else{
+	tempWS=dynamic_cast<WS^>(current);
+	}
+	if(tempWS!=nullptr){
+		if(tempWS->getPathCount()>0){
+			 return tempWS->getPath(0);
+			 
+		}
+	}
+	if(tempWP!=nullptr){
+		for (int i=0;i<tempWP->getExecutableCount();i++){
+			
+			return recurseToolPath(tempWP->getExecutable(i));
+			
+		
+		}
+	
+	
+	}
+	return nullptr;
+}
+
+
+*/
+
+
+

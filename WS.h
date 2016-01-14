@@ -4,12 +4,12 @@ using namespace System::Net;
 using namespace System::Collections::Generic;
 using namespace System::IO;
 using namespace System::Text;
-
+#pragma once
 #ifndef __WS__
 #define __WS__
-#include "Exec.h";
 
-#include "WP.h";
+#include "Exec.h"
+
 
 #include "ToolPath.h"
 ref class WS: Exec
@@ -33,7 +33,7 @@ public:
 	
 	ToolPath^ getPath(__int64 i){if(i<pathList->Count){return pathList[i];}else {return nullptr;}}
 	__int64 getPathCount(){return pathList->Count;}
-	WS(String^ n,__int64 ID,__int64 in,WP^p,__int64 toolID):Exec( n,ID,in,p,false)
+	WS(String^ n,__int64 ID,__int64 in,Exec^p,__int64 toolID):Exec( n,ID,in,p,false)
 	{
 	pathList=gcnew List<ToolPath^>;
 	
