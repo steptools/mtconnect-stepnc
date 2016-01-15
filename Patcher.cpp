@@ -1,4 +1,5 @@
 #include "Patcher.h"
+#include"stdafx.h"
 WP^ Patcher::getAllExec(__int64 root,STEPNCLib::Finder ^find,WP^plan,__int64 index){
 	WP^ mainWP =nullptr;
 	String^ name;
@@ -596,8 +597,10 @@ void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName
 //force the apt builder and the find object to work in inches
 void Patcher::OpenFile(String^file,String^ desiredWorkPlanPath,String^newWorkPlanName,STEPNCLib::Finder ^%find,STEPNCLib::AptStepMaker^%apt, __int64% wpID){
 
-	apt = gcnew STEPNCLib::AptStepMaker();
-	find=gcnew STEPNCLib::Finder();
+//	apt = gcnew STEPNCLib::AptStepMaker();
+	//find=gcnew STEPNCLib::Finder();
+	find->Open238(file);
+	apt->Open238(file);
 	array<String^>^ nameList=desiredWorkPlanPath->Split('/');
 	__int64 id= getWorkPlanByPath(nameList,find);
 	apt->Inches();
@@ -605,7 +608,7 @@ void Patcher::OpenFile(String^file,String^ desiredWorkPlanPath,String^newWorkPla
 }
 //Delete all workplans on directly nested under the main workplan
 //except for wpid
-void DeleteBefore(__int64 wpid,STEPNCLib::Finder ^find,STEPNCLib::AptStepMaker^apt){
+void Patcher::DeleteBefore(__int64 wpid,STEPNCLib::Finder ^find,STEPNCLib::AptStepMaker^apt){
 	__int64 mainWP=find->GetMainWorkplan();
 	List<__int64> ^WPList=find->GetNestedExecutableAll(mainWP);
 	for (int i=0;i< WPList->Count;i++){
@@ -619,9 +622,10 @@ void DeleteBefore(__int64 wpid,STEPNCLib::Finder ^find,STEPNCLib::AptStepMaker^a
 
 }
 
-void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor,bool toInches){
-	STEPNCLib::AptStepMaker^ apt;
-	STEPNCLib::Finder^find;
+void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor){
+	STEPNCLib::AptStepMaker^ apt = gcnew AptStepMaker();
+	STEPNCLib::Finder^find = gcnew Finder();
+
 	__int64 oldWPID;
 	
 	OpenFile(partFile,WPpath,newWorkPlan,find,apt,oldWPID);
@@ -640,82 +644,6 @@ void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileNa
 
 
 /*
-ToolPath^ nextPath(bool % newWP, bool% newWS){
-	ToolPath^temp=nextPath();
-	Exec^ tempExec;
-	if (temp!=nullptr){
-		newWP=false;
-		newWS=false;
-	return temp;
-	}
-	else{
-		WS^ tempWS=dynamic_cast<WS^>(parent);
-		ToolPath^ nextToolPath=nullptr;
-		List<WP^>^path=pathtoRoot(tempWS);
-		for (int i=0;i<path->Count;i++){
-			nextToolPath=recurseToNextToolPath(path[i],tempWS->getIndex());
-		
-		
-		}
-	}
-}
-List<WP^>^pathtoRoot(WS^temp){
-	List<WP^> ^path=gcnew List<WP^>();
-	WP^ temp1=dynamic_cast<WP^>(temp->getParent());
-
-	if(temp!=nullptr){
-		while (temp1!=nullptr){
-		path->Add(temp1);
-		temp1=dynamic_cast<WP^>(temp1->getParent());
-		
-		
-		}
-	
-	}
-
-	return path;
-
-}
-ToolPath^ recurseToNextToolPath(WP^ current , __int64 startIndexAfter){
-	ToolPath^ result=nullptr;
-	for(int i=startIndexAfter+1;i<current->getExecutableCount();i++){
-		result =recurseToolPath(current->getExecutable(i));
-		if(result!=nullptr){
-			return result;
-		}
-	}
-
-	
-}
-ToolPath^ recurseToolPath(Exec^ current){
-	WS^ tempWS=nullptr;
-	WP^ tempWP=nullptr;
-	WP^ tempWP2;
-	if (current->isWP()){
-		tempWP=dynamic_cast<WP^>(current);
-	}
-	else{
-	tempWS=dynamic_cast<WS^>(current);
-	}
-	if(tempWS!=nullptr){
-		if(tempWS->getPathCount()>0){
-			 return tempWS->getPath(0);
-			 
-		}
-	}
-	if(tempWP!=nullptr){
-		for (int i=0;i<tempWP->getExecutableCount();i++){
-			
-			return recurseToolPath(tempWP->getExecutable(i));
-			
-		
-		}
-	
-	
-	}
-	return nullptr;
-}
-
 
 */
 

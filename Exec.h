@@ -8,17 +8,18 @@ using namespace System::Text;
 #ifndef __EXEC__
 #define __EXEC__
 
-ref class Exec
+ref class WP;
+ ref class Exec
 {
 private:
 String ^ name;
 __int64 id;
 __int64 index;
-Exec^ parent;
+WP^ parent;
 bool typeWP;
 public:
 
-	bool isWP(){return typeWP;};
+  bool isWP(){return typeWP;};
 	//get name of Executable
 	String^ getName(){return name;};
 	// get stpnc id of Executable
@@ -26,8 +27,8 @@ public:
 	// index in list of enabled executalbes for an enabled parent WorkPlan
 	__int64 getIndex(){return index;};
 
-	Exec^ getParent(){return parent;};
-	Exec(String^ n,__int64 ID,__int64 in,Exec^p,bool iswp){
+	WP^ getParent();
+	Exec(String^ n,__int64 ID,__int64 in,WP^p,bool iswp){
 	name=n;
 	id=ID;
 	index=in;

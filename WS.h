@@ -11,7 +11,8 @@ using namespace System::Text;
 #include "Exec.h"
 
 
-#include "ToolPath.h"
+//#include "ToolPath.h"
+ref class ToolPath;
 ref class WS: Exec
 {
 private:
@@ -23,22 +24,17 @@ List<ToolPath^>^ pathList;
 public:
 
 	//get stpnc ID of tool
-	__int64 getToolId(){return tool;}
+	__int64 getToolId();
 
 
 	
 
 	
-	void addPath(ToolPath^t){pathList->Add(t);};
+	void addPath(ToolPath^t);
 	
-	ToolPath^ getPath(__int64 i){if(i<pathList->Count){return pathList[i];}else {return nullptr;}}
-	__int64 getPathCount(){return pathList->Count;}
-	WS(String^ n,__int64 ID,__int64 in,Exec^p,__int64 toolID):Exec( n,ID,in,p,false)
-	{
-	pathList=gcnew List<ToolPath^>;
-	
-	tool=toolID;
-	}
-
+	ToolPath^ getPath(__int64 i);
+	__int64 getPathCount();
+	WS(String^ n, __int64 ID, __int64 in, WP^p, __int64 toolID);
+	List<WP^>^pathtoRoot();
 };
 #endif

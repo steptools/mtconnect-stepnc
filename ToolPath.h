@@ -4,10 +4,11 @@ using namespace System::Net;
 using namespace System::Collections::Generic;
 using namespace System::IO;
 using namespace System::Text;
-#pragma once
+
 #ifndef __TOOLPATH__
 #define __TOOLPATH__
-#include "Exec.h"
+
+#include "WS.h"
 
 ref class ToolPath
 {
@@ -17,25 +18,22 @@ private:
 	double feedrate;
 	__int64 index;
 	__int64 id;
-	Exec^ parent;
+	WS^ parent;
 
 
 
 
 public:
-	ToolPath(Exec^ p,bool rapid,double f,double s,__int64 in, __int64 ID){
-	parent=p;
-	isRapid=rapid;
-	feedrate=f;
-	spindleSpeed=s;
-	index=in;
-	id=ID;
+	ToolPath(WS^ p, bool rapid, double f, double s, __int64 in, __int64 ID);
+	WS^ getWS();
 	
-	}
-	Exec^ getWS(){return parent;};
-	Exec^getWP(){return parent->getParent();}
-	__int64 getId(){return id;}
-	__int64 getIndex(){return index;}
+	__int64 getId();
+	__int64 getIndex();
+
+	ToolPath^ nextPath();
+	ToolPath^ nextPath(bool % newWP, bool% newWS);
+	ToolPath^ recurseToNextToolPath(WP^ current, __int64 startIndexAfter);
+	ToolPath^ recurseToolPath(Exec^ current);
 	//get pointer to next path regardless if it is a new WS or WP
 	//null if non exist
 	/*

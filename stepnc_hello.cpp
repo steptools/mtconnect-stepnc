@@ -10,10 +10,19 @@
 //
 //	http://www.steptools.com/support/stepnc_docs/
 //
+#include"stdafx.h"
 #include "MtConnector.h"
 #include "WP.h"
 using namespace System;
+using namespace STEPNCLib;
+using namespace System::Xml;
+using namespace System::Collections::Generic;
+using namespace System;
+using namespace System::Net;
 
+using namespace System::Collections::Generic;
+using namespace System::IO;
+using namespace System::Text;
 using namespace System::Xml;
 using namespace System::Collections::Generic;
 
@@ -417,7 +426,8 @@ Console::WriteLine("input \n part {0}\n xml file{1} \n path to desired workplan 
 
 int main(int argc, char * argv[])
 {
-	
+	Patcher ^pat;
+	pat = gcnew Patcher();
 	MtConnector ^ mt;
 	mt=gcnew MtConnector();
 	Console::WriteLine("created MTCOnnect");
@@ -425,11 +435,14 @@ int main(int argc, char * argv[])
 	//http://agent.mtconnect.org/VMC-3Axis/sample?count=1000&interval=10&path=//Path/DataItems/DataItem[@category=\"SAMPLE\"]"
 	//http://okuma-matata:5000/sample?count=1000&interval=10
 	//"http://okuma-matata:5000/sample?count=1000&interval=10&path=//Path/DataItems/DataItem[@id=\"Mp1LPathPos\"]");
-	mt->getRequest("http://okuma-matata:5000/sample?count=1000&interval=1000&path=//Path/DataItems/DataItem[@type=\"PATH_POSITION\"]","DATA.txt");
+	//mt->getRequest("http://okuma-matata:5000/sample?count=1000&interval=1000&path=//Path/DataItems/DataItem[@type=\"PATH_POSITION\"]","DATA.txt");
 	///DataItems/DataItem[@type=\"PathPosition\"]
 	//PullFromServer(mt);
  //appendToFile("sample_300ms.xml","hardmoldy_ext.stpnc","moldy_300.stpnc",true);
 	//appendPatchWorkPlan("hardmoldy_ext.stpnc","sample_300ms.xml","patched_300.stpnc","HARDMOLDY/Profiling/Boeing",true);
+	
+	pat->createPatchedFile("hardmoldy_imts_signed.stpnc", "HARDMOLDY", "patchedMoldy", "PatchWP", "Data.txt");
+
 	String ^readIn =Console::ReadLine();
 	return 0;
 }

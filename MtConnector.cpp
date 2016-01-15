@@ -1,6 +1,6 @@
 #include "MtConnector.h"
 
-
+#include"stdafx.h"
 MtConnector::MtConnector()
 {
 	startedPush=false;

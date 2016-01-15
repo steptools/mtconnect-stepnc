@@ -28,7 +28,7 @@ private:
 	WP^ root;
 	String^ originalSTPNC;
 	String^newSTPNC;
-
+public:
 	//open and init finder and apt obect file
 	//append a new workplan to the end of the workplans nested under the main work plan
 
@@ -48,7 +48,9 @@ private:
 	List<double> ^getAllPoints(List<long long>^ paths,STEPNCLib::Finder ^find);
 	void patchRapid(List<long long>^ pathList,STEPNCLib::AptStepMaker ^ apt, STEPNCLib::Finder ^find,double max_feed);
 	void appendPatchWorkPlan(String^partFile,String^coorFile,String^outName,String^ path,bool toInches );
-	void createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor,bool toInches);
+	void createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor);
 	//ToolPath^ firstPath(__int64 root);
+	void DeleteBefore(__int64 wpid, STEPNCLib::Finder ^find, STEPNCLib::AptStepMaker^apt);
+
 };
 #endif
