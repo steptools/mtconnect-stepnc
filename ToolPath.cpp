@@ -20,7 +20,7 @@ ToolPath::ToolPath(WS^ p, bool rapid, double f, double s, __int64 in, __int64 ID
 	spindleSpeed = s;
 	index = in;
 	id = ID;
-
+	copyID = -1;
 }
 WS^ ToolPath::getWS() { return parent; }
 __int64 ToolPath::getId(){ return id; }
@@ -40,7 +40,9 @@ ToolPath^ ToolPath::nextPath(bool % newWP, bool% newWS) {
 		List<WP^>^path = getWS()->pathtoRoot();
 		for (int i = 0; i<path->Count; i++) {
 			nextToolPath = recurseToNextToolPath(path[i], tempWS->getIndex());
-
+			if (nextToolPath != nullptr) {
+				return nextToolPath;
+			}
 
 		}
 	}
@@ -86,3 +88,5 @@ ToolPath^ ToolPath::recurseToolPath(Exec^ current) {
 	return nullptr;
 }
 
+__int64 ToolPath::getCopyID() { return copyID; }
+bool ToolPath::copyCreated() { if (copyID == -1) { return false; } else { return true; } }

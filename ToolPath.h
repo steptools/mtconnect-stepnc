@@ -19,7 +19,7 @@ private:
 	__int64 index;
 	__int64 id;
 	WS^ parent;
-
+	__int64 copyID;
 
 
 
@@ -34,6 +34,8 @@ public:
 	ToolPath^ nextPath(bool % newWP, bool% newWS);
 	ToolPath^ recurseToNextToolPath(WP^ current, __int64 startIndexAfter);
 	ToolPath^ recurseToolPath(Exec^ current);
+	__int64 getCopyID();
+	bool copyCreated();
 	//get pointer to next path regardless if it is a new WS or WP
 	//null if non exist
 	/*

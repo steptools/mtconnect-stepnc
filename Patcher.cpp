@@ -430,17 +430,6 @@ List<List<long long>^> ^ Patcher::getAllRapidPaths(long long workplan, STEPNCLib
 	return rapidToolPaths;
 }
 
-double Patcher::actualFeedRate(array<double>^ coor1,array<double>^ coor2){
-	double dx=coor1[0]-coor2[0];
-	double dy=coor1[1]-coor2[1];
-	double dz=coor1[2]-coor2[2];
-	
-	double dist= Math::Sqrt( Math::Pow(dx,2)+Math::Pow(dy,2)+Math::Pow(dz,2))/coor2[3];
-	
-		//Console::WriteLine("dx {0} dy{1} dz {2}  deltat {3} speed{4}",dx,dy,dz,coor2[3],dist);
-	
-	return dist;
-}
 List<double> ^Patcher::getAllPoints(List<long long>^ paths,STEPNCLib::Finder ^find){
 	List<long long >^ curves=nullptr;
 	List<double> ^pts=gcnew List<double>();
@@ -602,7 +591,7 @@ void Patcher::OpenFile(String^file,String^ desiredWorkPlanPath,String^newWorkPla
 	find->Open238(file);
 	apt->Open238(file);
 	array<String^>^ nameList=desiredWorkPlanPath->Split('/');
-	__int64 id= getWorkPlanByPath(nameList,find);
+	wpID= getWorkPlanByPath(nameList,find);
 	apt->Inches();
 	find->APIUnitsInch();
 }
@@ -625,22 +614,85 @@ void Patcher::DeleteBefore(__int64 wpid,STEPNCLib::Finder ^find,STEPNCLib::AptSt
 void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor){
 	STEPNCLib::AptStepMaker^ apt = gcnew AptStepMaker();
 	STEPNCLib::Finder^find = gcnew Finder();
-
-	__int64 oldWPID;
+	bool newWS = true;
+	bool newWP = true;
 	
+	__int64 oldWPID;
+	RawData^ samples = gcnew RawData();
 	OpenFile(partFile,WPpath,newWorkPlan,find,apt,oldWPID);
 	array<String^>^ nameList=WPpath->Split('/');
 	//get the workplan id 
 	
-	
+	samples->changeSourceTxt(coor);
+	samples->parse();
 	
 	root=getAllExec(oldWPID,find,nullptr,0);
+	
+/////init
 
+	long wp_id = find->GetMainWorkplan();
+	Console::WriteLine("Main Workplan name " + find->GetExecutableName(wp_id));
 
+	// add a new workplan at the end of the project
+	apt->NestWorkplanAfter("Workplan for MTConnect results", find->GetWorkplanExecutableCount(wp_id) + 1, wp_id);
+	// get the first path 
+	ToolPath^ firstPath=root->firstPath();
+	double feed = 0;
+	array<double>^ coor1;
+	array<double>^coor2;
+	
+	for (int i = 0; i > samples->getSize()-1; i++) {
+		coor1 = samples->getCoor(i);
+		coor2 = samples->getCoor(i + 1);
+		feed = samples->actualFeedRate(i,i+1);
+
+		
+	
+	
+	}
 
 
 }
+                                                                                            //wpid of extension WP
+                                                                                            //not of the copied WP
+void Patcher::generateWPForToolPath(STEPNCLib::AptStepMaker^ apt,STEPNCLib::Finder^ find,ToolPath^newtool,ToolPath^old) {
+	WS^ desiredWS = newtool->getWS();
+	List<WP^> ^path = desiredWS->pathtoRoot();
+	List<WP^>^oldPath = old->getWS()->pathtoRoot();
+	path->Reverse();
+	oldPath->Reverse();
+	int max1 = path->Count;
+	int max2 = oldPath->Count;
+	int  countAbove;
+	int positionInPath;
+	WP^branchAfter = nullptr;
+	for (int i = 0; i < max1&&i < max2; i++) {
+		if (path[i]->getId() != oldPath[i]->getId()) {
+		
+			positionInPath = i- 1;
+			branchAfter = path[i-1];
+		
+		}
+		
+	
+	}
+	if (branchAfter != nullptr) {
+	countAbove=	branchAfter->distanceAbove(path[path->Count - 1]);
+	for (int i = 0; i < countAbove; i++) {
+		apt->EndWorkplan();
+	
+	}
+	}
+	else {
+		branchAfter = old->getWS()->getParent;
+	
+	}
+	for (int i = positionInPath + 1; i < max1; i++) {
+		apt->NestWorkplan(path[positionInPath]->getName());
+		path[positionInPath]->setCopyID(apt->GetCurrentWorkplan());
+	}
 
+}
 
 
 /*

@@ -18,6 +18,7 @@ private:
 
 	
 	List<Exec^>^ execList;
+	ToolPath ^  firstPath(WP^ root);
 public:
 	void addExecutable(Exec^ e);
 	WP(String^ n, __int64 ID, __int64 in, WP^p);
@@ -25,7 +26,8 @@ public:
 	Exec^ getExecutable(__int64 i);
 	
 	__int64 getExecutableCount();
-	ToolPath ^  firstPath(WP^ root);
-
+	
+	ToolPath ^  WP::firstPath();
+	__int64 distanceAbove(WP^);
 };
 #endif

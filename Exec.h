@@ -16,9 +16,10 @@ String ^ name;
 __int64 id;
 __int64 index;
 WP^ parent;
+__int64 copyID;
 bool typeWP;
 public:
-
+	
   bool isWP(){return typeWP;};
 	//get name of Executable
 	String^ getName(){return name;};
@@ -26,7 +27,9 @@ public:
 	__int64 getId(){return id;};
 	// index in list of enabled executalbes for an enabled parent WorkPlan
 	__int64 getIndex(){return index;};
-
+	__int64 getCopyID() { return copyID; }
+	void setCopyID(__int64 i) { copyID = i; }
+	bool copyCreated() { if (copyID == -1) { return false; } else { return true; } }
 	WP^ getParent();
 	Exec(String^ n,__int64 ID,__int64 in,WP^p,bool iswp){
 	name=n;
@@ -34,6 +37,7 @@ public:
 	index=in;
 	parent=p;
 	typeWP=iswp;
+	copyID = -1;
 	}
 };
 #endif

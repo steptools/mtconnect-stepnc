@@ -13,5 +13,5 @@ using namespace STEPNCLib;
 #include"MtConnector.h"
 #include"Patcher.h"
 #include"ToolPath.h"
-
+#include"RawData.h"
 
