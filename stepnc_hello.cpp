@@ -442,7 +442,7 @@ int main(int argc, char * argv[])
 	//appendPatchWorkPlan("hardmoldy_ext.stpnc","sample_300ms.xml","patched_300.stpnc","HARDMOLDY/Profiling/Boeing",true);
 	
 	pat->createPatchedFile("hardmoldy_imts_signed.stpnc", "HARDMOLDY", "patchedMoldy", "PatchWP", "Data.txt");
-
+	Console::WriteLine("done");
 	String ^readIn =Console::ReadLine();
 	return 0;
 }

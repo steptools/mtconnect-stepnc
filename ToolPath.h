@@ -26,10 +26,11 @@ private:
 public:
 	ToolPath(WS^ p, bool rapid, double f, double s, __int64 in, __int64 ID);
 	WS^ getWS();
-	
+	bool rapid();
 	__int64 getId();
 	__int64 getIndex();
-
+	double getFeed();
+	double getSpindle();
 	ToolPath^ nextPath();
 	ToolPath^ nextPath(bool % newWP, bool% newWS);
 	ToolPath^ recurseToNextToolPath(WP^ current, __int64 startIndexAfter);

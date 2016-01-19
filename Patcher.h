@@ -51,6 +51,9 @@ public:
 	void createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor);
 	//ToolPath^ firstPath(__int64 root);
 	void DeleteBefore(__int64 wpid, STEPNCLib::Finder ^find, STEPNCLib::AptStepMaker^apt);
-	void generateWPForToolPath(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, ToolPath^newtool, ToolPath^old)
+	void generateWPForToolPath(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, ToolPath^newtool, ToolPath^old);
+	void generateWSForToolPath(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, WS^, ToolPath^tp);
+	ToolPath^ patchRapidToolPaths(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, ToolPath^tp);
+	void rapidToPoints(STEPNCLib::AptStepMaker^apt, STEPNCLib::Finder ^ find, List<__int64>^STPNCpath);
 };
 #endif

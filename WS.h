@@ -20,14 +20,15 @@ private:
 __int64 tool;
 List<ToolPath^>^ pathList;
 
-
+double max_feed;
+double max_spindle;
 public:
 
 	//get stpnc ID of tool
 	__int64 getToolId();
 
-
-	
+	double getMaxFeed();
+	double getMaxSpindle();
 
 	
 	void addPath(ToolPath^t);

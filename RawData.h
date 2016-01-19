@@ -13,7 +13,7 @@ private:
 	const String^ TXTFILE = "TXT";
 	String^ sourceFile;
 	StreamReader ^read ;
-	String^type;
+	const String^type;
 	List<array<double>^>^ coor;
 public:
 
@@ -22,9 +22,7 @@ public:
 	//bool changeSourceMTConnect(String^ request);
 
 	bool parse();
-	RawData() { read = nullptr;
-	sourceFile = nullptr;
-	}
+	RawData();
 	__int64 getSize();
 	bool RawData::parseTxt();
 
@@ -32,5 +30,5 @@ public:
 
 	double actualFeedRate(__int64, __int64);
 
-
+	void convertMMToInches();
 };

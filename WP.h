@@ -19,6 +19,7 @@ private:
 	
 	List<Exec^>^ execList;
 	ToolPath ^  firstPath(WP^ root);
+	
 public:
 	void addExecutable(Exec^ e);
 	WP(String^ n, __int64 ID, __int64 in, WP^p);

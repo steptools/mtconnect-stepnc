@@ -35,11 +35,21 @@ ToolPath^ ToolPath::nextPath(bool % newWP, bool% newWS) {
 		return temp;
 	}
 	else {
+		newWP = true;
+		newWS = true;
 		WS^ tempWS = getWS();
 		ToolPath^ nextToolPath = nullptr;
 		List<WP^>^path = getWS()->pathtoRoot();
 		for (int i = 0; i<path->Count; i++) {
-			nextToolPath = recurseToNextToolPath(path[i], tempWS->getIndex());
+			if (i == 0) {
+				nextToolPath = recurseToNextToolPath(path[i], tempWS->getIndex());
+			}
+			else {
+				nextToolPath = recurseToNextToolPath(path[i], path[i-1]->getIndex());
+
+			
+			}
+
 			if (nextToolPath != nullptr) {
 				return nextToolPath;
 			}
@@ -57,6 +67,8 @@ ToolPath^ ToolPath::recurseToNextToolPath(WP^ current, __int64 startIndexAfter) 
 		}
 	}
 
+	Console::WriteLine("could notge next path ");
+	return nullptr;
 
 }
 ToolPath^ ToolPath::recurseToolPath(Exec^ current) {
@@ -90,3 +102,7 @@ ToolPath^ ToolPath::recurseToolPath(Exec^ current) {
 
 __int64 ToolPath::getCopyID() { return copyID; }
 bool ToolPath::copyCreated() { if (copyID == -1) { return false; } else { return true; } }
+
+double ToolPath::getFeed() { return feedrate; }
+bool ToolPath::rapid() { return isRapid; }
+double ToolPath::getSpindle() { return spindleSpeed; }

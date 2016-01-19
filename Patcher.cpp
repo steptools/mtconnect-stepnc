@@ -26,6 +26,8 @@ WP^ Patcher::getAllExec(__int64 root,STEPNCLib::Finder ^find,WP^plan,__int64 ind
 				else if (find->IsWorkingstep(nestedPlans[i])&&find->IsEnabled(nestedPlans[i])){
 					name=find->GetExecutableName(nestedPlans[i]);
 					toolID=find->GetWorkingstepTool(nestedPlans[i]);	
+					bool ret;
+					toolID = find->GetToolNumberAsNumber(toolID, ret);
 					mainWS=gcnew WS(name,nestedPlans[i],i,mainWP,toolID);
 					mainWP->addExecutable(mainWS);
 					//need to add all toolpaths
@@ -625,7 +627,7 @@ void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileNa
 	
 	samples->changeSourceTxt(coor);
 	samples->parse();
-	
+	samples->convertMMToInches();
 	root=getAllExec(oldWPID,find,nullptr,0);
 	
 /////init
@@ -637,24 +639,54 @@ void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileNa
 	apt->NestWorkplanAfter("Workplan for MTConnect results", find->GetWorkplanExecutableCount(wp_id) + 1, wp_id);
 	// get the first path 
 	ToolPath^ firstPath=root->firstPath();
+	//init apt with first WS befor loop
+
+	List<WP^>^ path = firstPath->getWS()->pathtoRoot();
+	path->Reverse();
+	for (int i = 0; i < path->Count; i++) {
+		apt->NestWorkplan(path[i]->getName());
+		path[i]->setCopyID(apt->GetCurrentWorkplan());
+
+	}
+	generateWSForToolPath(apt, find, firstPath->getWS(), nullptr);
 	double feed = 0;
 	array<double>^ coor1;
 	array<double>^coor2;
-	
-	for (int i = 0; i > samples->getSize()-1; i++) {
+	ToolPath^ currentTP = firstPath;
+	bool firstRapid = true;
+	for (int i = 0; i < samples->getSize()-1; i++) {
 		coor1 = samples->getCoor(i);
 		coor2 = samples->getCoor(i + 1);
 		feed = samples->actualFeedRate(i,i+1);
-
+		if (.6 < feed ) {
+			if (firstRapid == true) {
+				currentTP = patchRapidToolPaths(apt, find, currentTP);
+				firstRapid = false;
+			}
+		
+		}
+		else {
+			firstRapid = true;
+			apt->GoToXYZ("feed", coor2[0], coor2[1], coor2[2]);
+		}
 		
 	
-	
+		if (currentTP == nullptr) { break; }
 	}
-
+	apt->SaveAsModules("patchedWithWS");
 
 }
                                                                                             //wpid of extension WP
                                                                                             //not of the copied WP
+
+void Patcher::generateWSForToolPath(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, WS^ ws ,ToolPath^tp) {
+	apt->Workingstep(ws->getName());
+	apt->LoadTool(ws->getToolId());
+	ws->setCopyID(apt->GetCurrentWorkingstep());
+	apt->Rapid();
+	Console::WriteLine(" created mirror WS {0} ", ws->getName());
+}
+
 void Patcher::generateWPForToolPath(STEPNCLib::AptStepMaker^ apt,STEPNCLib::Finder^ find,ToolPath^newtool,ToolPath^old) {
 	WS^ desiredWS = newtool->getWS();
 	List<WP^> ^path = desiredWS->pathtoRoot();
@@ -677,27 +709,158 @@ void Patcher::generateWPForToolPath(STEPNCLib::AptStepMaker^ apt,STEPNCLib::Find
 	
 	}
 	if (branchAfter != nullptr) {
-	countAbove=	branchAfter->distanceAbove(path[path->Count - 1]);
+		countAbove = oldPath->Count - (positionInPath + 1);
 	for (int i = 0; i < countAbove; i++) {
 		apt->EndWorkplan();
 	
 	}
 	}
 	else {
-		branchAfter = old->getWS()->getParent;
-	
+		//there is no wp change
+		if (max1 == max2) {
+			return;
+		}
+		branchAfter = old->getWS()->getParent();
+		positionInPath = oldPath->Count - 1;
 	}
 	for (int i = positionInPath + 1; i < max1; i++) {
-		apt->NestWorkplan(path[positionInPath]->getName());
-		path[positionInPath]->setCopyID(apt->GetCurrentWorkplan());
+		apt->NestWorkplan(path[i]->getName());
+		path[i]->setCopyID(apt->GetCurrentWorkplan());
 	}
 
 }
+void Patcher::rapidToPoints(STEPNCLib::AptStepMaker^apt,STEPNCLib::Finder ^ find, List<__int64>^STPNCpath) {
+	List<double>^ coor = getAllPoints(STPNCpath, find);
+	int totalPts = coor->Count / 3;
+	apt->Rapid();
+	for (int i = 0; i<totalPts; i++) {
+		apt->GoToXYZ("rapid", coor[i * 3], coor[i * 3 + 1], coor[i * 3 + 2]);
 
+	}
 
+}
+bool transitionToFeed(ToolPath ^tp1, ToolPath ^tp2) {
+	if (tp1!=nullptr&&tp2!=nullptr&&tp1->rapid()&&tp2->rapid()) {
+		return false;
+	}
+	else { return true; }
+
+}
+ToolPath^ Patcher::patchRapidToolPaths(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, ToolPath^tp) {
+	bool wp, ws;
+	ToolPath ^tp1 = tp;
+ToolPath ^tp2 = nullptr;
+	List<__int64> ^STPNCpath = gcnew List<__int64>();
+	while (!tp1->rapid()) {
+		tp1=tp1->nextPath(wp, ws);
+	}
+	while (tp1->rapid())
+	{
+		STPNCpath->Add(tp1->getId());
+		rapidToPoints(apt, find, STPNCpath);
+		STPNCpath->Clear();
+		ws = false;
+		wp = false;
+		tp2= tp1->nextPath(wp, ws);
+		if (tp2 == nullptr) { return nullptr; }
+		if (ws || wp) {
+
+			//rapidToPoints(apt, find, STPNCpath);
+			//STPNCpath->Clear();
+			if (wp) {
+				generateWPForToolPath(apt, find, tp2, tp1);
+
+			}
+			generateWSForToolPath(apt, find, tp2->getWS(), nullptr);
+
+		}
+		tp1 = tp2;
+	}
+
+	apt->Feedrate(tp1->getWS()->getMaxFeed());
+	apt->SpindleSpeed(tp1->getWS()->getMaxSpindle());
+	return tp1;
+}
 /*
+ToolPath^ Patcher::patchRapidToolPaths(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, ToolPath^tp) {
+	bool prevRapid = false;
+	bool currentRapid = false;
+	bool first = true;
+	ToolPath ^WStransisiton = nullptr;
+	List<__int64> ^STPNCpath = gcnew List<__int64>();
+	
+	
+	
+	bool wp = false;
+	bool ws = false;
+	while (!(prevRapid==true&&currentRapid==false)||first) {
+		if (first) {
+			first = false;
+			prevRapid = tp->rapid();
 
+			if (prevRapid == true) { STPNCpath->Add(tp->getId()); 
+			rapidToPoints(apt, find, STPNCpath);
+			STPNCpath->Clear();
+			}
+		
+		}
+		else {
+			prevRapid = currentRapid;
+		
+		}
+
+		ws = false;
+		wp = false;
+		
+		
+		WStransisiton = tp->nextPath(wp, ws);
+		if (WStransisiton == nullptr) {
+			break;
+		
+		}
+		
+		if (ws || wp) {
+			
+			//rapidToPoints(apt, find, STPNCpath);
+			//STPNCpath->Clear();
+			if (wp) {
+				generateWPForToolPath(apt, find, WStransisiton, tp);
+				
+			}
+			generateWSForToolPath(apt, find, tp->getWS(), WStransisiton);
+			
+		}
+		
+		currentRapid = WStransisiton->rapid();
+		if (currentRapid == true) {
+			STPNCpath->Add(WStransisiton->getId());
+			rapidToPoints(apt, find, STPNCpath);
+			STPNCpath->Clear();
+		}
+		
+		tp = WStransisiton;
+		
+	}
+	
+	
+	apt->Feedrate(tp->getWS()->getMaxFeed());
+	apt->SpindleSpeed(tp->getWS()->getMaxSpindle());
+	return tp;
+}
 */
 
 
+double Patcher::actualFeedRate(array<double>^ coor1, array<double>^ coor2) {
 
+
+	double dx = coor1[0] - coor2[0];
+	double dy = coor1[1] - coor2[1];
+	double dz = coor1[2] - coor2[2];
+
+	double dist = Math::Sqrt(Math::Pow(dx, 2) + Math::Pow(dy, 2) + Math::Pow(dz, 2)) / coor2[3];
+
+	//Console::WriteLine("dx {0} dy{1} dz {2}  deltat {3} speed{4}",dx,dy,dz,coor2[3],dist);
+
+	return dist;
+
+}

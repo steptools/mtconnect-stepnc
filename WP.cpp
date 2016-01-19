@@ -28,7 +28,7 @@ ToolPath ^  WP::firstPath(WP^ root) {
 			return firstPath(tempWP);
 		}
 		else {
-			tempWS = dynamic_cast<WS^>(tempWS);
+			tempWS = dynamic_cast<WS^>(tempExec);
 			return tempWS->getPath(0);
 
 		}
@@ -43,7 +43,7 @@ __int64 WP::distanceAbove(WP^ ancestor) {
 	__int64 count = 0;
 	while (temp!=nullptr&&temp->getId() != ancestor->getId()) {
 	
-		temp = temp->getParent;
+		temp = temp->getParent();
 		count += 1;
 		
 	
