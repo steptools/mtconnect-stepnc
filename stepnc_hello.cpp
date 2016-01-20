@@ -441,7 +441,9 @@ int main(int argc, char * argv[])
  //appendToFile("sample_300ms.xml","hardmoldy_ext.stpnc","moldy_300.stpnc",true);
 	//appendPatchWorkPlan("hardmoldy_ext.stpnc","sample_300ms.xml","patched_300.stpnc","HARDMOLDY/Profiling/Boeing",true);
 	
-	pat->createPatchedFile("hardmoldy_imts_signed.stpnc", "HARDMOLDY", "patchedMoldy", "PatchWP", "Data.txt");
+	//pat->createPatchedFile("hardmoldy_imts_signed.stpnc", "HARDMOLDY", "patchedMoldy", "PatchWP", "Data.txt");
+	//pat->appendToFile("Data.txt", "hardmoldy_imts_signed.stpnc", "patchedMoldy", true);
+	pat->appendPatchWorkPlan("hardmoldy_imts_signed.stpnc", "Data.txt", "moldySeperated", "HARDMOLDY/Profiling/Boeing", true);
 	Console::WriteLine("done");
 	String ^readIn =Console::ReadLine();
 	return 0;

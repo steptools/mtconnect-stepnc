@@ -55,5 +55,7 @@ public:
 	void generateWSForToolPath(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, WS^, ToolPath^tp);
 	ToolPath^ patchRapidToolPaths(STEPNCLib::AptStepMaker^ apt, STEPNCLib::Finder^ find, ToolPath^tp);
 	void rapidToPoints(STEPNCLib::AptStepMaker^apt, STEPNCLib::Finder ^ find, List<__int64>^STPNCpath);
+	bool rapidStarted(List<bool>^ state);
+	bool isFeedState(List<bool>^state, int count);
 };
 #endif

@@ -167,8 +167,13 @@ STEPNCLib::AptStepMaker ^ apt = gcnew STEPNCLib::AptStepMaker();
 
 
 void Patcher::appendToFile(String^ file_name,String^ original,String^ new_file_name,bool convert_to_inches){
-	List<array<double>^> ^coor_List= coordinates(file_name,convert_to_inches);
-    // Create a trivial STEP-NC file
+	//List<array<double>^> ^coor_List= coordinates(file_name,convert_to_inches);
+	RawData^ sample = gcnew RawData();
+	sample->changeSourceTxt(file_name);
+	sample->parse();
+	//sample->convertMMToInches();
+	
+	// Create a trivial STEP-NC file
 	Console::WriteLine("Got Position Data From File");
     STEPNCLib::AptStepMaker ^ apt = gcnew STEPNCLib::AptStepMaker();
 
@@ -179,7 +184,7 @@ void Patcher::appendToFile(String^ file_name,String^ original,String^ new_file_n
 	    //	    Find.Open238("new_hardmoldy.stpnc");
 	    
 	    apt->Open238(original);
-
+		apt->Inches();
 	    long wp_id = find->GetMainWorkplan();
 	    Console::WriteLine("Main Workplan name " + find->GetExecutableName(wp_id));
 
@@ -204,8 +209,8 @@ void Patcher::appendToFile(String^ file_name,String^ original,String^ new_file_n
     apt->Feedrate (30);
 	String ^str;
 	array<double>^ coor;
-	for (int i=0;i<coor_List->Count;i++){
-		coor=coor_List[i];
+	for (int i=0;i<sample->getSize();i++){
+		coor=sample->getCoor(i);
 		
 		str=String::Format("point {0} ",i+1);
 		//Console::WriteLine(str);
@@ -214,7 +219,8 @@ void Patcher::appendToFile(String^ file_name,String^ original,String^ new_file_n
 		apt->GoToXYZ(str, coor[0], coor[1], coor[2]);
 	
 	}
-    
+	apt->EndWorkplan();
+	apt->EndWorkplan();
 	
 	apt->SaveAsModules(new_file_name);
 	Console::WriteLine("done");
@@ -469,9 +475,15 @@ void Patcher::patchRapid(List<long long>^ pathList,STEPNCLib::AptStepMaker ^ apt
 void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName,String^ path,bool toInches ){
 	Console::WriteLine("input \n part {0}\n xml file{1} \n path to desired workplan {2}",partFile,coorFile,path);
 	//assume all units are inches or inches per sec
-	double max_feed=14.0/60;//inches per sec
+	double max_feed=.8;//inches per sec
 	//get path position coordinates from the xml file with delta t in seconds at end
-	List<array<double>^> ^coorList=	coordinatesWithTime(coorFile,toInches);
+
+	
+	//List<array<double>^> ^coorList=	coordinatesWithTime(coorFile,toInches);
+	RawData^ sample = gcnew RawData();
+	sample->changeSourceTxt(coorFile);
+	sample->parse();
+	sample->convertMMToInches();
 	Console::WriteLine("Got coordinates list");
 	STEPNCLib::AptStepMaker ^ apt = gcnew STEPNCLib::AptStepMaker();
 
@@ -479,7 +491,7 @@ void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName
 
 	STEPNCLib::Finder ^find = gcnew STEPNCLib::Finder();
 	apt->Inches();
-
+	find->APIUnitsInch();
 	//open the part file
 	apt->Open238 (partFile);
 
@@ -516,12 +528,12 @@ void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName
 	bool startRapid=false;
 	bool currentCoorisRapid=true;
 	int currentTransition=0;
-	Console::WriteLine("number of path coordinates {0}",coorList->Count);
-	Console::WriteLine("number of transitions {0}",transitionPaths->Count);
+	//Console::WriteLine("number of path coordinates {0}",coorList->Count);
+	//Console::WriteLine("number of transitions {0}",transitionPaths->Count);
 	//determine if starting position is in rapid mode or feed
-	if(coorList->Count>1){
-		coor1=coorList[0];
-		coor2=coorList[1];
+	if(sample->getSize()>1){
+		coor1 = sample->getCoor(0);
+		coor2= sample->getCoor(1);
 	
 		if (actualFeedRate(coor1,coor2)>max_feed){
 			currentCoorisRapid=true;
@@ -541,9 +553,9 @@ void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName
 	
 	double actualFeed=0;
 	//iterate over all pair of consecutive points
-	for (int i=1;i<coorList->Count;i++){
-		coor1=coorList[i-1];
-		coor2=coorList[i];
+	for (int i=1;i<sample->getSize();i++){
+		coor1=sample->getCoor(i-1);
+		coor2=sample->getCoor(i);
 
 		str=String::Format("point {0} ",i+1);
 		actualFeed=actualFeedRate(coor1,coor2);
@@ -613,6 +625,58 @@ void Patcher::DeleteBefore(__int64 wpid,STEPNCLib::Finder ^find,STEPNCLib::AptSt
 
 }
 
+
+bool Patcher::rapidStarted(List<bool>^ state) {
+	bool startIsRapid = state[0];
+	bool  trans = startIsRapid;
+	int rapidToFeed = 0;
+	int feedToRapid = 0;
+	int firstFeedToRapidPos;
+	for (int i = 0; i < state->Count; i++) {
+		if (trans!=state[i])
+		{
+			if (trans &&!state[i]) {
+				rapidToFeed += 1;
+			
+			}
+			else {
+				feedToRapid += 1;
+				firstFeedToRapidPos = i;
+			}
+			
+		}
+		trans = state[i];
+	
+	
+	}
+	if (feedToRapid == 1&&rapidToFeed==0) 
+	{
+		state->RemoveRange(0, firstFeedToRapidPos + 1);
+		
+		
+		
+		return true; }
+	else {
+		return false;
+	}
+
+}
+bool Patcher::isFeedState(List<bool>^state,int count) {
+	if (state->Count < count) {
+		count = state->Count - 1;
+	
+	}
+	for (int i = state->Count - 1; i > state->Count-count; i--) {
+		if (state[i])
+		{
+			return false;
+		}
+
+
+
+	}
+	return true;
+}
 void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileName,String^newWorkPlan,String^ coor){
 	STEPNCLib::AptStepMaker^ apt = gcnew AptStepMaker();
 	STEPNCLib::Finder^find = gcnew Finder();
@@ -654,21 +718,47 @@ void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileNa
 	array<double>^coor2;
 	ToolPath^ currentTP = firstPath;
 	bool firstRapid = true;
+	bool prevCoorIsRapid = false;
+	List<bool> ^pastRapids = gcnew List<bool>();
 	for (int i = 0; i < samples->getSize()-1; i++) {
 		coor1 = samples->getCoor(i);
 		coor2 = samples->getCoor(i + 1);
 		feed = samples->actualFeedRate(i,i+1);
-		if (.6 < feed ) {
-			if (firstRapid == true) {
-				currentTP = patchRapidToolPaths(apt, find, currentTP);
-				firstRapid = false;
-			}
-		
+		if (i == 0) { prevCoorIsRapid = false;
+		pastRapids->Add(prevCoorIsRapid);
+		}
+		if ( feed >.6) {
+			
+			
+			
+			prevCoorIsRapid = true;
 		}
 		else {
-			firstRapid = true;
-			apt->GoToXYZ("feed", coor2[0], coor2[1], coor2[2]);
+			prevCoorIsRapid = false;
 		}
+		
+		if (pastRapids->Count>5) {
+			pastRapids->RemoveAt(0);
+		}
+			pastRapids->Add( prevCoorIsRapid);
+		
+	
+			
+			if (!prevCoorIsRapid) {
+				
+				apt->Feedrate(currentTP->getWS()->getMaxFeed());
+				
+				apt->SpindleSpeed(currentTP->getWS()->getMaxSpindle());
+				apt->GoToXYZ("feed", coor2[0], coor2[1], coor2[2]);
+			}else if(prevCoorIsRapid&&!pastRapids[pastRapids->Count-2]) {
+
+				currentTP = patchRapidToolPaths(apt, find, currentTP);
+
+
+
+			}
+		
+		
 		
 	
 		if (currentTP == nullptr) { break; }
@@ -751,9 +841,21 @@ ToolPath^ Patcher::patchRapidToolPaths(STEPNCLib::AptStepMaker^ apt, STEPNCLib::
 	ToolPath ^tp1 = tp;
 ToolPath ^tp2 = nullptr;
 	List<__int64> ^STPNCpath = gcnew List<__int64>();
-	while (!tp1->rapid()) {
+	while (tp1->rapid()==false) {
 		tp1=tp1->nextPath(wp, ws);
+		if (ws || wp) {
+			Console::WriteLine(" Transitioned to a new WS without rapiding");
+		}
+		}
+
+	if (tp1->getWS()->getIndex() >= 9) {
+		apt->Workingstep("Rapiding");
+	
 	}
+	List<__int64> ^temp = gcnew List<__int64>();
+	temp->Add(tp1->getId());
+	List<double> ^loc = getAllPoints(temp, find);
+	Console::WriteLine("rapid starting at WS {0} index {1}  coor {2} {3} {4}", tp1->getWS()->getName(), tp1->getIndex(), loc[0], loc[1], loc[2]);
 	while (tp1->rapid())
 	{
 		STPNCpath->Add(tp1->getId());
@@ -776,9 +878,11 @@ ToolPath ^tp2 = nullptr;
 		}
 		tp1 = tp2;
 	}
+	if (tp1->getWS()->getIndex() >= 9) {
+		apt->Workingstep("Feed");
 
-	apt->Feedrate(tp1->getWS()->getMaxFeed());
-	apt->SpindleSpeed(tp1->getWS()->getMaxSpindle());
+	}
+	
 	return tp1;
 }
 /*
