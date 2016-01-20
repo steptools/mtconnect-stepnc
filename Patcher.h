@@ -57,5 +57,6 @@ public:
 	void rapidToPoints(STEPNCLib::AptStepMaker^apt, STEPNCLib::Finder ^ find, List<__int64>^STPNCpath);
 	bool rapidStarted(List<bool>^ state);
 	bool isFeedState(List<bool>^state, int count);
+	void debugOut(STEPNCLib::AptStepMaker^apt, STEPNCLib::Finder^ find,double feed);
 };
 #endif

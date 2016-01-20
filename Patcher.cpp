@@ -467,6 +467,13 @@ void Patcher::patchRapid(List<long long>^ pathList,STEPNCLib::AptStepMaker ^ apt
 	apt->Workingstep("starting Feed");
 }
 
+
+void Patcher::debugOut(STEPNCLib::AptStepMaker^apt, STEPNCLib::Finder^ find,double feed) {
+	
+	Console::WriteLine("feed {0}", feed);
+
+}
+
 //given a stpnc file and a workplan within the stepnc file
 // append a workplan with tool paths genereated from the xml data
 //that contains tool position
@@ -475,7 +482,7 @@ void Patcher::patchRapid(List<long long>^ pathList,STEPNCLib::AptStepMaker ^ apt
 void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName,String^ path,bool toInches ){
 	Console::WriteLine("input \n part {0}\n xml file{1} \n path to desired workplan {2}",partFile,coorFile,path);
 	//assume all units are inches or inches per sec
-	double max_feed=.8;//inches per sec
+	double max_feed=.3;//inches per sec
 	//get path position coordinates from the xml file with delta t in seconds at end
 
 	
@@ -524,18 +531,19 @@ void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName
 	String ^str;
 	array<double>^ coor1;
 	array<double>^coor2;
-
+	
 	bool startRapid=false;
 	bool currentCoorisRapid=true;
 	int currentTransition=0;
+	__int64 debugStep;
 	//Console::WriteLine("number of path coordinates {0}",coorList->Count);
 	//Console::WriteLine("number of transitions {0}",transitionPaths->Count);
 	//determine if starting position is in rapid mode or feed
 	if(sample->getSize()>1){
 		coor1 = sample->getCoor(0);
 		coor2= sample->getCoor(1);
-	
-		if (actualFeedRate(coor1,coor2)>max_feed){
+		
+		if (actualFeedRate(coor1, coor2)>max_feed){
 			currentCoorisRapid=true;
 			
 
@@ -547,6 +555,8 @@ void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName
 		if(currentCoorisRapid){
 				apt->Rapid();
 			}else{
+			
+
 				apt->Feedrate(max_feed);
 			}
 		}
@@ -578,7 +588,14 @@ void Patcher::appendPatchWorkPlan(String^partFile,String^coorFile,String^outName
 			}
 		
 		}else if(currentCoorisRapid==false){
-		
+			debugStep = apt->GetCurrentWorkingstep();
+			if (find->GetWorkingstepName2(debugStep)->Contains("WS 24")) {
+				Console::WriteLine("WS {0}", find->GetWorkingstepName2(debugStep));
+				debugOut(apt, find, actualFeed);
+
+			}
+
+
 			startRapid=false;
 			apt->GoToXYZ("feed",coor2[0],coor2[1],coor2[2]);
 		}
@@ -744,13 +761,13 @@ void Patcher::createPatchedFile(String^ partFile,String^ WPpath,String^newFileNa
 		
 	
 			
-			if (!prevCoorIsRapid) {
+			if (!prevCoorIsRapid&&isFeedState(pastRapids,3)) {
 				
 				apt->Feedrate(currentTP->getWS()->getMaxFeed());
 				
 				apt->SpindleSpeed(currentTP->getWS()->getMaxSpindle());
 				apt->GoToXYZ("feed", coor2[0], coor2[1], coor2[2]);
-			}else if(prevCoorIsRapid&&!pastRapids[pastRapids->Count-2]) {
+			}else if(rapidStarted(pastRapids)) {
 
 				currentTP = patchRapidToolPaths(apt, find, currentTP);
 
@@ -847,15 +864,15 @@ ToolPath ^tp2 = nullptr;
 			Console::WriteLine(" Transitioned to a new WS without rapiding");
 		}
 		}
-
+	/*
 	if (tp1->getWS()->getIndex() >= 9) {
 		apt->Workingstep("Rapiding");
 	
-	}
+	}*/
 	List<__int64> ^temp = gcnew List<__int64>();
 	temp->Add(tp1->getId());
 	List<double> ^loc = getAllPoints(temp, find);
-	Console::WriteLine("rapid starting at WS {0} index {1}  coor {2} {3} {4}", tp1->getWS()->getName(), tp1->getIndex(), loc[0], loc[1], loc[2]);
+	//Console::WriteLine("rapid starting at WS {0} index {1}  coor {2} {3} {4}", tp1->getWS()->getName(), tp1->getIndex(), loc[0], loc[1], loc[2]);
 	while (tp1->rapid())
 	{
 		STPNCpath->Add(tp1->getId());
@@ -878,11 +895,12 @@ ToolPath ^tp2 = nullptr;
 		}
 		tp1 = tp2;
 	}
+	/*
 	if (tp1->getWS()->getIndex() >= 9) {
 		apt->Workingstep("Feed");
 
 	}
-	
+	*/
 	return tp1;
 }
 /*
